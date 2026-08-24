@@ -99,6 +99,30 @@
     justify-content: center;
   }
   .mobile-menu-toggle:hover { background: rgba(255,255,255,0.2); }
+  .discord-nav-link {
+    display: none;
+    width: 38px;
+    height: 34px;
+    flex: 0 0 38px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255,255,255,0.32);
+    border-radius: 5px;
+    background: rgba(255,255,255,0.12);
+    transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  }
+  .discord-nav-link.is-visible { display: inline-flex; }
+  .discord-nav-link:hover {
+    background: #5865f2;
+    border-color: #7289da;
+    transform: translateY(-1px);
+  }
+  .discord-nav-link img {
+    width: 21px;
+    height: 21px;
+    display: block;
+    filter: brightness(0) invert(1);
+  }
 
   /* ── MAIN ── */
   main { padding: 24px; max-width: 1600px; margin: 0 auto; padding-top: 20px; }
@@ -1099,7 +1123,7 @@
   @media (max-width: 640px) {
     header {
       height: 58px;
-      padding: 0 62px 0 12px;
+      padding: 0 108px 0 12px;
       gap: 10px;
     }
     .logo {
@@ -1114,6 +1138,12 @@
       position: absolute;
       top: 10px;
       right: 12px;
+      margin-left: 0;
+    }
+    .discord-nav-link.is-visible {
+      position: absolute;
+      top: 10px;
+      right: 58px;
       margin-left: 0;
     }
     nav {
@@ -1674,7 +1704,6 @@
 
 <header>
   <div class="logo"><img class="league-logo" src="images/TTHL%20Logo.png" alt="TTHL">TTHL <span>HOCKEY</span></div>
-  <button class="mobile-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" onclick="toggleMobileMenu(event)">&#9776;</button>
   <nav id="main-nav">
     <button class="active" onclick="showPage('home', this)">Home</button>
     <button onclick="showPage('standings', this)">Standings</button>
@@ -1687,6 +1716,10 @@
     <button id="bracket-nav-btn" onclick="showPage('bracket', this)">Playoff Bracket</button>
     <button onclick="showPage('games', this)">Recent Games</button>
   </nav>
+  <a id="discord-nav-link" class="discord-nav-link" href="#" target="_blank" rel="noopener noreferrer" aria-label="Join our Discord server" title="Join our Discord server">
+    <img src="https://cdn.simpleicons.org/discord/ffffff" alt="">
+  </a>
+  <button class="mobile-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" onclick="toggleMobileMenu(event)">&#9776;</button>
 </header>
 
 <main>
@@ -1857,6 +1890,7 @@ const PLAYOFF_SHEET_ID = ""; // optional separate playoff publish sheet
 const SOURCE_SHEET_ID = "1uGcv2iJvE-dvT26DWLuYnA6Md3rGHr4QaMREjGBI1MA"; // scraper sheet (Game/Skater/Goalie Log)
 const SCHEDULE_SHEET_ID = "1JkrBVL1DNWN1E79Ka7WkgInfyz6zoUddlpl_fXKfJts"; // schedule sheet
 const SITE_LEAGUE_NAME = "Tape To Tape Hockey League";
+const DISCORD_INVITE_URL = ""; // optional discord.gg or discord.com/invite link
 const WEBSITE_SEASONS_TAB = "Website Seasons";
 let playoffRuntimeSettings = {};
 let playoffStatsEnabled = false;
@@ -2124,6 +2158,29 @@ function formatLeaderValue(value, kind = "number") {
   return String(Math.round(value));
 }
 
+function normalizeDiscordInviteUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+    const validHost = host === "discord.gg" || host === "discord.com" || host === "discordapp.com";
+    const validPath = host === "discord.gg" || /^\/invite\//i.test(url.pathname);
+    return url.protocol === "https:" && validHost && validPath ? url.href : "";
+  } catch (_error) {
+    return "";
+  }
+}
+
+function configureDiscordLink(value) {
+  const link = document.getElementById("discord-nav-link");
+  if (!link) return;
+  const inviteUrl = normalizeDiscordInviteUrl(value);
+  link.classList.toggle("is-visible", Boolean(inviteUrl));
+  if (inviteUrl) link.href = inviteUrl;
+  else link.removeAttribute("href");
+}
+
 async function loadHomeSettings() {
   if (homeSettings) return homeSettings;
   const fallback = {
@@ -2131,7 +2188,8 @@ async function loadHomeSettings() {
     home_subtitle: "Tape To Tape Hockey League stats, standings, schedules, and playoff tracking.",
     league_intro: "Welcome to the Tape To Tape Hockey League hub. Follow the current season, league leaders, team standings, player stats, goalie stats, schedules, recent games, and playoff race in one place.",
     season_label: "Current Season",
-    season_dates: "Set in Website Settings"
+    season_dates: "Set in Website Settings",
+    discord_invite_url: DISCORD_INVITE_URL
   };
   try {
     const settings = await fetchScheduleSettings("Website Settings");
@@ -2152,10 +2210,18 @@ async function loadHomeSettings() {
       league_intro: cleanSetting(settingValue(settings, "league_intro") || settingValue(settings, "league_excerpt"), fallback.league_intro),
       season_label: cleanSetting(settingValue(settings, "season_label") || settingValue(settings, "season"), fallback.season_label),
       season_dates: cleanSetting(settingValue(settings, "season_dates") || settingValue(settings, "season_date_range"), fallback.season_dates),
+      discord_invite_url: String(
+        settingValue(settings, "discord_invite_url") ||
+        settingValue(settings, "discord_url") ||
+        settingValue(settings, "discord_invite") ||
+        DISCORD_INVITE_URL ||
+        ""
+      ).trim(),
     };
   } catch(e) {
     homeSettings = fallback;
   }
+  configureDiscordLink(homeSettings.discord_invite_url);
   return homeSettings;
 }
 
