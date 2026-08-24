@@ -7,17 +7,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --teal:    #1a5276;
-    --teal2:   #366c8e;
-    --teal3:   #d6eaf8;
-    --ice:     #f0f7ff;
+    --teal:    #101310;
+    --teal2:   #2b302c;
+    --teal3:   #e6f7d5;
+    --ice:     #f4f6f3;
     --white:   #ffffff;
-    --grey1:   #f2f3f4;
-    --grey2:   #d5d8dc;
-    --grey3:   #888888;
-    --black:   #111111;
-    --accent:  #e74c3c;
-    --gold:    #f39c12;
+    --grey1:   #eef1ed;
+    --grey2:   #cbd2ca;
+    --grey3:   #667068;
+    --black:   #101310;
+    --accent:  #d43b32;
+    --gold:    #7ded00;
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -38,7 +38,8 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    border-bottom: 3px solid var(--gold);
+    box-shadow: 0 3px 14px rgba(0,0,0,0.32);
   }
   .logo {
     font-family: 'Barlow Condensed', sans-serif;
@@ -53,11 +54,12 @@
   }
   .logo span { color: var(--gold); }
   .league-logo {
-    width: 30px;
-    height: 30px;
-    object-fit: contain;
+    width: 42px;
+    height: 42px;
+    object-fit: cover;
+    object-position: left center;
     flex: 0 0 auto;
-    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
   }
   nav {
     display: flex;
@@ -79,8 +81,8 @@
     white-space: nowrap;
     transition: background 0.15s, color 0.15s;
   }
-  nav button:hover { background: rgba(255,255,255,0.1); color: #fff; }
-  nav button.active { background: rgba(255,255,255,0.18); color: #fff; }
+  nav button:hover { background: rgba(125,237,0,0.12); color: #fff; }
+  nav button.active { background: var(--gold); color: var(--black); }
   .mobile-menu-toggle {
     display: none;
     margin-left: auto;
@@ -332,6 +334,7 @@
   .home-hero {
     background: linear-gradient(135deg, var(--teal), var(--teal2));
     color: #fff;
+    border-top: 3px solid var(--gold);
     border-radius: 8px;
     padding: 24px;
     box-shadow: 0 4px 22px rgba(0,0,0,0.14);
@@ -632,6 +635,8 @@
     padding: 24px;
     color: var(--grey3);
     font-size: 12px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
     margin-top: 40px;
   }
 
@@ -767,7 +772,7 @@
   .player-split-btn.active {
     background: var(--teal3);
     border-color: var(--teal);
-    box-shadow: inset 0 0 0 1px rgba(26,82,118,0.12);
+    box-shadow: inset 0 0 0 1px rgba(16,19,16,0.12);
   }
   .player-split-logo {
     width: 24px;
@@ -938,7 +943,7 @@
     border: 1px solid var(--grey2);
   }
   .stat-box.highlight { background: var(--teal3); border-color: var(--teal); }
-  .stat-box.advanced  { background: #fef9f0; border-color: #f39c12; }
+  .stat-box.advanced  { background: #f2fde7; border-color: var(--gold); }
   .stat-val {
     font-family: 'Barlow Condensed', sans-serif;
     font-size: 26px;
@@ -980,7 +985,7 @@
     max-width: 100%;
     overflow: hidden;
   }
-  .game-card:hover { border-color: var(--teal); box-shadow: 0 4px 20px rgba(26,82,118,0.15); }
+  .game-card:hover { border-color: var(--gold); box-shadow: 0 4px 20px rgba(16,19,16,0.16); }
   .game-date {
     font-size: 11px;
     color: var(--grey3);
@@ -1076,7 +1081,7 @@
     letter-spacing: 0.5px;
     font-size: 11px;
   }
-  .badge.ot   { background: #fef9f0; color: var(--gold); }
+  .badge.ot   { background: #f2fde7; color: #3f7800; }
   .badge.lgot { background: #fdf2f2; color: var(--accent); }
   .badge.forfeit { background: #111; color: #fff; }
   .game-arrow {
@@ -1094,18 +1099,22 @@
   @media (max-width: 640px) {
     header {
       height: 58px;
-      padding: 0 12px;
+      padding: 0 62px 0 12px;
       gap: 10px;
     }
     .logo {
       font-size: 22px;
     }
     .league-logo {
-      width: 26px;
-      height: 26px;
+      width: 36px;
+      height: 36px;
     }
     .mobile-menu-toggle {
       display: inline-flex;
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      margin-left: 0;
     }
     nav {
       display: none;
@@ -1132,8 +1141,8 @@
       border-radius: 5px;
     }
     nav button.active {
-      background: rgba(255,255,255,0.22);
-      color: #fff;
+      background: var(--gold);
+      color: var(--black);
     }
     .controls {
       top: 58px;
@@ -1426,7 +1435,7 @@
 
   /* PLAYOFF BRACKET */
   .bracket-stage {
-    background: radial-gradient(circle at center, rgba(255,255,255,0.16), rgba(26,82,118,0.92));
+    background: radial-gradient(circle at center, rgba(255,255,255,0.18), rgba(16,19,16,0.96));
     border-radius: 8px;
     padding: 22px;
     color: #fff;
@@ -1664,7 +1673,7 @@
 <body>
 
 <header>
-  <div class="logo"><img class="league-logo" src="images/NHL%20Logo.png" alt="">TTHL <span>HOCKEY</span></div>
+  <div class="logo"><img class="league-logo" src="images/TTHL%20Logo.png" alt="TTHL">TTHL <span>HOCKEY</span></div>
   <button class="mobile-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" onclick="toggleMobileMenu(event)">&#9776;</button>
   <nav id="main-nav">
     <button class="active" onclick="showPage('home', this)">Home</button>
