@@ -1898,9 +1898,103 @@ let playoffTop5Enabled = false;
 let websiteSeasons = [];
 let selectedWebsiteSeasonId = "current";
 
-const DIVISIONS = {};
+const DIVISIONS = {
+  "EAST": [
+    "BUF",
+    "DET",
+    "NYR",
+    "TOR"
+  ],
+  "WEST": [
+    "CGY",
+    "VGK",
+    "LAK",
+    "VAN"
+  ]
+};
 
-const TEAMS = [];
+const TEAMS = [
+  {
+    "abbr": "BUF",
+    "name": "Buffalo Sabres",
+    "logo": "Buffalo Sabres.png",
+    "keywords": [
+      "tthl buffalo sabres",
+      "buffalo sabres",
+      "buf"
+    ]
+  },
+  {
+    "abbr": "CGY",
+    "name": "Calgary Flames",
+    "logo": "Calgary Flames.png",
+    "keywords": [
+      "tthl calgary flames",
+      "calgary flames",
+      "cgy"
+    ]
+  },
+  {
+    "abbr": "DET",
+    "name": "Detroit Red Wings",
+    "logo": "Detroit Red Wings.png",
+    "keywords": [
+      "tthl detroit red wings",
+      "detroit red wings",
+      "det"
+    ]
+  },
+  {
+    "abbr": "VGK",
+    "name": "Vegas Golden Knights",
+    "logo": "Vegas Golden Knights.png",
+    "keywords": [
+      "tthl vegas golden knights",
+      "vegas golden knights",
+      "vgk"
+    ]
+  },
+  {
+    "abbr": "LAK",
+    "name": "LA Kings",
+    "logo": "Los Angeles Kings.png",
+    "keywords": [
+      "tthl los angeles kings",
+      "la kings",
+      "lak"
+    ]
+  },
+  {
+    "abbr": "NYR",
+    "name": "New York Rangers",
+    "logo": "New York Rangers.png",
+    "keywords": [
+      "tthl new york rangers",
+      "new york rangers",
+      "nyr"
+    ]
+  },
+  {
+    "abbr": "TOR",
+    "name": "Toronto Maple Leafs",
+    "logo": "Toronto Maple Leafs.png",
+    "keywords": [
+      "tthl toronto maple leafs",
+      "toronto maple leafs",
+      "tor"
+    ]
+  },
+  {
+    "abbr": "VAN",
+    "name": "Vancouver Canucks",
+    "logo": "vancouver canucks.png",
+    "keywords": [
+      "tthl vancouver canucks",
+      "vancouver canucks",
+      "van"
+    ]
+  }
+];
 
 const ROSTER_SHEET_TAB = "Roster";
 const LEGACY_ROSTER_SHEET_TABS = ["CWHL Season 2 Roster", "Season Roster"];
@@ -4451,11 +4545,70 @@ function gameDateCellHtml(timeOnly, phase) {
 }
 
 // Full team name lookup from abbreviation (for display)
-const ABBR_TO_FULL = {};
+const ABBR_TO_FULL = {
+  "BUF": "Buffalo Sabres",
+  "CGY": "Calgary Flames",
+  "DET": "Detroit Red Wings",
+  "VGK": "Vegas Golden Knights",
+  "LAK": "LA Kings",
+  "NYR": "New York Rangers",
+  "TOR": "Toronto Maple Leafs",
+  "VAN": "Vancouver Canucks"
+};
 
-const TEAM_LOGO_FILES = {};
+const TEAM_LOGO_FILES = {
+  "BUF": "Buffalo Sabres.png",
+  "CGY": "Calgary Flames.png",
+  "DET": "Detroit Red Wings.png",
+  "VGK": "Vegas Golden Knights.png",
+  "LAK": "Los Angeles Kings.png",
+  "NYR": "New York Rangers.png",
+  "TOR": "Toronto Maple Leafs.png",
+  "VAN": "vancouver canucks.png"
+};
 
-const ABBR_TO_KEYWORDS = {};
+const ABBR_TO_KEYWORDS = {
+  "BUF": [
+    "tthl buffalo sabres",
+    "buffalo sabres",
+    "buf"
+  ],
+  "CGY": [
+    "tthl calgary flames",
+    "calgary flames",
+    "cgy"
+  ],
+  "DET": [
+    "tthl detroit red wings",
+    "detroit red wings",
+    "det"
+  ],
+  "VGK": [
+    "tthl vegas golden knights",
+    "vegas golden knights",
+    "vgk"
+  ],
+  "LAK": [
+    "tthl los angeles kings",
+    "la kings",
+    "lak"
+  ],
+  "NYR": [
+    "tthl new york rangers",
+    "new york rangers",
+    "nyr"
+  ],
+  "TOR": [
+    "tthl toronto maple leafs",
+    "toronto maple leafs",
+    "tor"
+  ],
+  "VAN": [
+    "tthl vancouver canucks",
+    "vancouver canucks",
+    "van"
+  ]
+};
 
 // Map team name variants to abbreviation (for game log lookup)
 function nameToAbbr(name) {
