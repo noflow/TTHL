@@ -15,4 +15,4 @@ the website.
 The source sheet's **Team List** tab supplies Website Name, Abbreviation,
 Division, and Logo. Logo filenames must match the files in `images` exactly,
 including capitalization. For this site, use `New York Rangers.png`,
-`Toronto Maple Leafs.png`, and `vancouver canucks.png` (no spaces before `.png`).
+`Pittsburgh Penguins.png`, and `vancouver canucks.png` (no spaces before `.png`).
