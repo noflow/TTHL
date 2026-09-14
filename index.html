@@ -1997,6 +1997,8 @@ const TEAMS = [
 ];
 
 const ROSTER_SHEET_TAB = "Roster";
+const ROSTER_SHEET_ID = "1WN3T1ilRUnk5a95RyE4dorlPWqMsUpV70SS6N_Q4dWc";
+const ROSTER_LAYOUT = "tthl";
 const LEGACY_ROSTER_SHEET_TABS = ["CWHL Season 2 Roster", "Season Roster"];
 const ROSTER_BLOCK_BASES = [0, 9, 18, 27];
 const TEAM_SALARY_CAP = 73000000;
@@ -3114,10 +3116,10 @@ async function ensureMasterDataLoaded() {
 
 async function ensureOfficialRosterLoaded() {
   if (officialRosterCache) return officialRosterCache;
-  const tabs = [ROSTER_SHEET_TAB, ...LEGACY_ROSTER_SHEET_TABS.filter(t => t !== ROSTER_SHEET_TAB)];
+  const tabs = ROSTER_LAYOUT === "tthl" ? [ROSTER_SHEET_TAB] : [ROSTER_SHEET_TAB, ...LEGACY_ROSTER_SHEET_TABS.filter(t => t !== ROSTER_SHEET_TAB)];
   for (const tabName of tabs) {
     try {
-      const data = await fetchScheduleTab(tabName);
+      const data = await fetchRosterTab(tabName);
       officialRosterCache = parseOfficialRosterSheet([data.cols, ...data.rows]);
       return officialRosterCache;
     } catch(e) {
@@ -3126,6 +3128,19 @@ async function ensureOfficialRosterLoaded() {
   }
   officialRosterCache = { teams: {}, available: false };
   return officialRosterCache;
+}
+
+async function fetchRosterTab(tabName) {
+  if (!ROSTER_SHEET_ID && ROSTER_LAYOUT === "standard") return fetchScheduleTab(tabName);
+  const sheetId = ROSTER_SHEET_ID || scheduleSheetIdForSelectedSeason();
+  if (!sheetId) throw new Error("Roster sheet is not configured.");
+  // Keep blank rows inside team blocks and disable Google's inferred headers.
+  const range = ROSTER_LAYOUT === "tthl" ? "&range=A26:X70" : "";
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(tabName)}${range}&cb=${Date.now()}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status} fetching roster`);
+  const rows = parseCSV(await response.text());
+  return { cols: rows[0] || [], rows: rows.slice(1) };
 }
 
 function teamAbbrFromRosterName(value) {
@@ -3291,7 +3306,52 @@ function parseTeamBlockOfficialRosterSheet(rows) {
   return roster;
 }
 
+function parseTthlOfficialRosterSheet(rows) {
+  const aliases = {
+    "buffalo sabres": "BUF", "calgary flames": "CGY", "detroit red wings": "DET",
+    "las vegas golden knights": "VGK", "vegas golden knights": "VGK",
+    "los angeles kings": "LAK", "la kings": "LAK", "new york rangers": "NYR",
+    "pittsburgh penguins": "PIT", "vancouver canucks": "VAN",
+  };
+  const roster = { teams: {}, available: true };
+  const cell = (r, c) => String(rows[r]?.[c] ?? "").trim();
+  // Google omits leading empty rows. Locate titles, then use bounded offsets.
+  for (let r = 0; r < rows.length; r++) {
+    for (const c of [0, 6, 12, 18]) {
+      const abbr = teamAbbrFromRosterName(cell(r, c)) || aliases[cell(r, c).toLowerCase()];
+      if (!abbr || !TEAMS.some(team => team.abbr === abbr)) continue;
+      if (cell(r + 3, c).toLowerCase() !== "player name" || cell(r + 17, c).toLowerCase() !== "player name") continue;
+      const teamRoster = {
+        management: { owner: "", gm: "", agm: "" },
+        skaters: [], goalies: [], injuredReserve: [], capRemaining: "",
+      };
+      let committed = 0;
+      for (const [first, last, tc] of [[4, 15, false], [18, 20, true]]) {
+        for (let offset = first; offset <= last; offset++) {
+          const name = cell(r + offset, c);
+          if (!isRosterDataName(name)) continue;
+          const entry = { name, salary: cell(r + offset, c + 1), position: cell(r + offset, c + 4) };
+          if (tc) {
+            teamRoster.injuredReserve.push(entry);
+          } else {
+            const role = cell(r + offset, c + 2).toLowerCase();
+            if (["owner", "gm", "agm"].includes(role)) teamRoster.management[role] = name;
+            committed += parseRosterMoney(entry.salary);
+            (/^(g|goalie|goaltender)$/i.test(entry.position) ? teamRoster.goalies : teamRoster.skaters).push(entry);
+          }
+        }
+      }
+      const remaining = cell(r + 1, c + 5);
+      teamRoster.capRemaining = remaining && !remaining.startsWith("#") ? formatRosterMoney(parseRosterMoney(remaining)) : formatRosterMoney(TEAM_SALARY_CAP - committed);
+      roster.teams[abbr] = teamRoster;
+    }
+  }
+  if (!TEAMS.length || TEAMS.some(team => !roster.teams[team.abbr])) throw new Error("The TTHL roster layout does not contain every active team.");
+  return roster;
+}
+
 function parseOfficialRosterSheet(rows) {
+  if (ROSTER_LAYOUT === "tthl") return parseTthlOfficialRosterSheet(rows);
   if (isTeamBlockRosterSheet(rows)) return parseTeamBlockOfficialRosterSheet(rows);
   if (isFlatRosterSheet(rows)) return parseFlatOfficialRosterSheet(rows);
 
@@ -3848,10 +3908,11 @@ function renderTeamRosterDashboard(abbr, data) {
     (officialRoster.injuredReserve || []).forEach(entry => {
       const tcEntry = { ...entry, rosterStatus: "tc" };
       const key = cleanPlayerName(entry.name);
-      if (skByName.has(key) || !glByName.has(key)) {
+      const tthlGoalie = ROSTER_LAYOUT === "tthl" && /^(g|goalie|goaltender)$/i.test(entry.position);
+      if (!tthlGoalie && (skByName.has(key) || !glByName.has(key))) {
         tcSkaters.push(rowForRosterEntry(tcEntry, skByName, skHeaders, abbr, false));
       }
-      if (glByName.has(key)) {
+      if (tthlGoalie || glByName.has(key)) {
         tcGoalies.push(rowForRosterEntry(tcEntry, glByName, glHeaders, abbr, true));
       }
     });
