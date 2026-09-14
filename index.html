@@ -1909,7 +1909,9 @@ const DIVISIONS = {
     "CGY",
     "VGK",
     "LAK",
-    "VAN"
+    "VAN",
+    "ANA",
+    "CAR"
   ]
 };
 
@@ -1992,6 +1994,26 @@ const TEAMS = [
       "tthl vancouver canucks",
       "vancouver canucks",
       "van"
+    ]
+  },
+  {
+    "abbr": "ANA",
+    "name": "Anaheim Ducks",
+    "logo": "Anaheim Ducks.png",
+    "keywords": [
+      "tthl anaheim ducks",
+      "anaheim ducks",
+      "ana"
+    ]
+  },
+  {
+    "abbr": "CAR",
+    "name": "Carolina Hurricanes",
+    "logo": "Carolina Hurricanes.png",
+    "keywords": [
+      "tthl carolina hurricanes",
+      "carolina hurricanes",
+      "car"
     ]
   }
 ];
@@ -3135,7 +3157,7 @@ async function fetchRosterTab(tabName) {
   const sheetId = ROSTER_SHEET_ID || scheduleSheetIdForSelectedSeason();
   if (!sheetId) throw new Error("Roster sheet is not configured.");
   // Keep blank rows inside team blocks and disable Google's inferred headers.
-  const range = ROSTER_LAYOUT === "tthl" ? "&range=A26:X70" : "";
+  const range = ROSTER_LAYOUT === "tthl" ? "&range=A26:X1000" : "";
   const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(tabName)}${range}&cb=${Date.now()}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error(`HTTP ${response.status} fetching roster`);
@@ -3304,6 +3326,60 @@ function parseTeamBlockOfficialRosterSheet(rows) {
     teamRoster.capRemaining = calculatedCapRemaining({ skaters: teamRoster.players, goalies: [] }) || teamRoster.capRemaining;
   });
   return roster;
+}
+
+function parseTthlTeamList(rows) {
+  const header = (rows[0] || []).map(normalizeConfigKey);
+  const column = (...names) => names.map(name => header.indexOf(name)).find(index => index >= 0) ?? -1;
+  const nameCol = column("website_name", "display_name", "public_name", "site_name");
+  const sourceCol = column("team_name", "name");
+  const abbrCol = column("abbreviation", "abbr");
+  const divisionCol = column("division", "conference");
+  const logoCol = column("logo", "logo_file", "logo_filename");
+  const activeCol = column("active", "enabled", "show_on_website", "website_active");
+  if (sourceCol < 0 || abbrCol < 0) throw new Error("Team List headers are missing.");
+  const result = { teams: [], divisions: {} };
+  const seen = new Set();
+  for (const row of rows.slice(1)) {
+    const source = String(row[sourceCol] || "").trim();
+    const name = String(row[nameCol] || source).trim();
+    const abbr = String(row[abbrCol] || "").trim().toUpperCase();
+    if (!source && !abbr) continue;
+    if (["false", "no", "0", "off", "inactive", "hidden"].includes(String(row[activeCol] ?? "").trim().toLowerCase())) continue;
+    const division = String(row[divisionCol] || "League").trim();
+    if (!name || !/^[A-Z0-9]{2,6}$/.test(abbr) || seen.has(abbr) || /[<>&"\\]/.test(name + division)) throw new Error("Team List contains an invalid or duplicate team.");
+    seen.add(abbr);
+    const requestedLogo = String(row[logoCol] || `${name}.png`).trim();
+    const existingLogo = TEAM_LOGO_FILES[abbr];
+    const logoKey = value => String(value).toLowerCase().replace(/\s+\.png$/, ".png");
+    const logo = existingLogo && logoKey(existingLogo) === logoKey(requestedLogo) ? existingLogo : requestedLogo;
+    result.teams.push({ abbr, name, logo, keywords: [...new Set([source.toLowerCase(), name.toLowerCase(), abbr.toLowerCase()])] });
+    (result.divisions[division] ||= []).push(abbr);
+  }
+  if (!result.teams.length) throw new Error("Team List has no active teams.");
+  return result;
+}
+
+async function refreshTthlTeamsFromApi() {
+  if (ROSTER_LAYOUT !== "tthl" || !SOURCE_SHEET_ID) return;
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SOURCE_SHEET_ID}/gviz/tq?tqx=out:csv&headers=0&sheet=Team%20List&range=A1:O2000&cb=${Date.now()}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status} fetching Team List`);
+    const data = parseTthlTeamList(parseCSV(await response.text()));
+    TEAMS.splice(0, TEAMS.length, ...data.teams);
+    for (const map of [DIVISIONS, ABBR_TO_FULL, TEAM_LOGO_FILES, ABBR_TO_KEYWORDS]) {
+      Object.keys(map).forEach(key => delete map[key]);
+    }
+    Object.assign(DIVISIONS, data.divisions);
+    data.teams.forEach(team => {
+      ABBR_TO_FULL[team.abbr] = team.name;
+      TEAM_LOGO_FILES[team.abbr] = team.logo;
+      ABBR_TO_KEYWORDS[team.abbr] = team.keywords;
+    });
+  } catch (error) {
+    console.warn("Unable to refresh Team List; using published teams.", error);
+  }
 }
 
 function parseTthlOfficialRosterSheet(rows) {
@@ -4614,7 +4690,9 @@ const ABBR_TO_FULL = {
   "LAK": "LA Kings",
   "NYR": "New York Rangers",
   "PIT": "Pittsburgh Penguins",
-  "VAN": "Vancouver Canucks"
+  "VAN": "Vancouver Canucks",
+  "ANA": "Anaheim Ducks",
+  "CAR": "Carolina Hurricanes"
 };
 
 const TEAM_LOGO_FILES = {
@@ -4625,7 +4703,9 @@ const TEAM_LOGO_FILES = {
   "LAK": "Los Angeles Kings.png",
   "NYR": "New York Rangers.png",
   "PIT": "Pittsburgh Penguins.png",
-  "VAN": "vancouver canucks.png"
+  "VAN": "vancouver canucks.png",
+  "ANA": "Anaheim Ducks.png",
+  "CAR": "Carolina Hurricanes.png"
 };
 
 const ABBR_TO_KEYWORDS = {
@@ -4668,6 +4748,16 @@ const ABBR_TO_KEYWORDS = {
     "tthl vancouver canucks",
     "vancouver canucks",
     "van"
+  ],
+  "ANA": [
+    "tthl anaheim ducks",
+    "anaheim ducks",
+    "ana"
+  ],
+  "CAR": [
+    "tthl carolina hurricanes",
+    "carolina hurricanes",
+    "car"
   ]
 };
 
@@ -6320,6 +6410,7 @@ function restoreTab() {
 
 async function initSite() {
   await loadWebsiteSeasons();
+  await refreshTthlTeamsFromApi();
   await ensureHiddenPlayersLoaded();
   await refreshBracketVisibility();
   startBracketVisibilityWatcher();
