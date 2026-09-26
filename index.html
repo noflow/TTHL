@@ -3391,18 +3391,25 @@ function parseTthlOfficialRosterSheet(rows) {
   };
   const roster = { teams: {}, available: true };
   const cell = (r, c) => String(rows[r]?.[c] ?? "").trim();
-  // Google omits leading empty rows. Locate titles, then use bounded offsets.
+  // Google omits leading empty rows. Locate titles and follow the TC status rows.
   for (let r = 0; r < rows.length; r++) {
     for (const c of [0, 6, 12, 18]) {
       const abbr = teamAbbrFromRosterName(cell(r, c)) || aliases[cell(r, c).toLowerCase()];
       if (!abbr || !TEAMS.some(team => team.abbr === abbr)) continue;
       if (cell(r + 3, c).toLowerCase() !== "player name" || cell(r + 17, c).toLowerCase() !== "player name") continue;
+      let tcEnd = 17;
+      while (r + tcEnd + 1 < rows.length) {
+        const next = r + tcEnd + 1;
+        if (cell(next + 1, c).toLowerCase() === "roster count") break;
+        if (cell(next, c + 3).toLowerCase() !== "tc" && !isRosterDataName(cell(next, c))) break;
+        tcEnd++;
+      }
       const teamRoster = {
         management: { owner: "", gm: "", agm: "" },
         skaters: [], goalies: [], injuredReserve: [], capRemaining: "",
       };
       let committed = 0;
-      for (const [first, last, tc] of [[4, 15, false], [18, 20, true]]) {
+      for (const [first, last, tc] of [[4, 15, false], [18, tcEnd, true]]) {
         for (let offset = first; offset <= last; offset++) {
           const name = cell(r + offset, c);
           if (!isRosterDataName(name)) continue;
