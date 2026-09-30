@@ -3384,7 +3384,12 @@ function parseTthlOfficialRosterSheet(rows) {
         }
       }
       const expectedHeaders = ["player name", "salary", "staff role", "notes", "position"];
-      if (!tcMarker || [3, tcMarker + 1].some(offset => expectedHeaders.some((text, i) => cell(r + offset, c + i).toLowerCase() !== text))) {
+      // Google's public CSV feed omits text in a numeric Salary column.
+      const headerMatches = (offset, text, i) => {
+        const value = cell(r + offset, c + i).toLowerCase();
+        return value === text || (i === 1 && value === "");
+      };
+      if (!tcMarker || [3, tcMarker + 1].some(offset => expectedHeaders.some((text, i) => !headerMatches(offset, text, i)))) {
         throw new Error(`Check the roster and Training Camp headers for ${abbr}.`);
       }
       for (let offset = 4; offset < tcMarker; offset++) {
