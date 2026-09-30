@@ -1902,16 +1902,14 @@ const DIVISIONS = {
   "EAST": [
     "BUF",
     "DET",
-    "NYR",
+    "VGK",
     "PIT"
   ],
   "WEST": [
     "CGY",
-    "VGK",
     "LAK",
     "VAN",
-    "ANA",
-    "CAR"
+    "ANA"
   ]
 };
 
@@ -1967,16 +1965,6 @@ const TEAMS = [
     ]
   },
   {
-    "abbr": "NYR",
-    "name": "New York Rangers",
-    "logo": "New York Rangers.png",
-    "keywords": [
-      "tthl new york rangers",
-      "new york rangers",
-      "nyr"
-    ]
-  },
-  {
     "abbr": "PIT",
     "name": "Pittsburgh Penguins",
     "logo": "Pittsburgh Penguins.png",
@@ -2004,16 +1992,6 @@ const TEAMS = [
       "tthl anaheim ducks",
       "anaheim ducks",
       "ana"
-    ]
-  },
-  {
-    "abbr": "CAR",
-    "name": "Carolina Hurricanes",
-    "logo": "Carolina Hurricanes.png",
-    "keywords": [
-      "tthl carolina hurricanes",
-      "carolina hurricanes",
-      "car"
     ]
   }
 ];
@@ -3396,8 +3374,25 @@ function parseTthlOfficialRosterSheet(rows) {
     for (const c of [0, 6, 12, 18]) {
       const abbr = teamAbbrFromRosterName(cell(r, c)) || aliases[cell(r, c).toLowerCase()];
       if (!abbr || !TEAMS.some(team => team.abbr === abbr)) continue;
-      if (cell(r + 3, c).toLowerCase() !== "player name" || cell(r + 17, c).toLowerCase() !== "player name") continue;
-      let tcEnd = 17;
+      if (cell(r + 1, c).toLowerCase() !== "roster count") continue;
+      let tcMarker = 0;
+      for (let next = r + 5; next < rows.length; next++) {
+        if (cell(next + 1, c).toLowerCase() === "roster count") break;
+        if (["tc", "training camp"].includes(cell(next, c).toLowerCase())) {
+          tcMarker = next - r;
+          break;
+        }
+      }
+      const expectedHeaders = ["player name", "salary", "staff role", "notes", "position"];
+      if (!tcMarker || [3, tcMarker + 1].some(offset => expectedHeaders.some((text, i) => cell(r + offset, c + i).toLowerCase() !== text))) {
+        throw new Error(`Check the roster and Training Camp headers for ${abbr}.`);
+      }
+      for (let offset = 4; offset < tcMarker; offset++) {
+        if (["player name", "roster count"].includes(cell(r + offset, c).toLowerCase())) {
+          throw new Error(`Unexpected header inside the main roster for ${abbr}.`);
+        }
+      }
+      let tcEnd = tcMarker + 1;
       while (r + tcEnd + 1 < rows.length) {
         const next = r + tcEnd + 1;
         if (cell(next + 1, c).toLowerCase() === "roster count") break;
@@ -3409,7 +3404,7 @@ function parseTthlOfficialRosterSheet(rows) {
         skaters: [], goalies: [], injuredReserve: [], capRemaining: "",
       };
       let committed = 0;
-      for (const [first, last, tc] of [[4, 15, false], [18, tcEnd, true]]) {
+      for (const [first, last, tc] of [[4, tcMarker - 1, false], [tcMarker + 2, tcEnd, true]]) {
         for (let offset = first; offset <= last; offset++) {
           const name = cell(r + offset, c);
           if (!isRosterDataName(name)) continue;
@@ -4695,11 +4690,9 @@ const ABBR_TO_FULL = {
   "DET": "Detroit Red Wings",
   "VGK": "Vegas Golden Knights",
   "LAK": "LA Kings",
-  "NYR": "New York Rangers",
   "PIT": "Pittsburgh Penguins",
   "VAN": "Vancouver Canucks",
-  "ANA": "Anaheim Ducks",
-  "CAR": "Carolina Hurricanes"
+  "ANA": "Anaheim Ducks"
 };
 
 const TEAM_LOGO_FILES = {
@@ -4708,11 +4701,9 @@ const TEAM_LOGO_FILES = {
   "DET": "Detroit Red Wings.png",
   "VGK": "Vegas Golden Knights.png",
   "LAK": "Los Angeles Kings.png",
-  "NYR": "New York Rangers.png",
   "PIT": "Pittsburgh Penguins.png",
   "VAN": "vancouver canucks.png",
-  "ANA": "Anaheim Ducks.png",
-  "CAR": "Carolina Hurricanes.png"
+  "ANA": "Anaheim Ducks.png"
 };
 
 const ABBR_TO_KEYWORDS = {
@@ -4741,11 +4732,6 @@ const ABBR_TO_KEYWORDS = {
     "la kings",
     "lak"
   ],
-  "NYR": [
-    "tthl new york rangers",
-    "new york rangers",
-    "nyr"
-  ],
   "PIT": [
     "tthl penguins",
     "pittsburgh penguins",
@@ -4760,11 +4746,6 @@ const ABBR_TO_KEYWORDS = {
     "tthl anaheim ducks",
     "anaheim ducks",
     "ana"
-  ],
-  "CAR": [
-    "tthl carolina hurricanes",
-    "carolina hurricanes",
-    "car"
   ]
 };
 
