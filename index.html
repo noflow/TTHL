@@ -3858,6 +3858,8 @@ function renderTeamFromMaster(abbr, { sk, gl }) {
     "Pts/GP","G/GP","A/GP","Shot %","Shots On Net %","Pass %","Faceoff %",
     "Offense Rating","Defense Rating","Teamplay Rating",
     "EV Sh%","EVO","GAR","WAR","Plus Minus","Possession (mins)","TOI (mins)"]);
+  // Player appearances and results do not add up to the team record.
+  if (ROSTER_LAYOUT === "tthl") ["GP", "W", "L", "OT", "OTL"].forEach(col => NON_SUM.add(col));
 
   const totals = new Array(skHeaders.length).fill("");
   totals[0] = "TOTAL";
@@ -4027,6 +4029,8 @@ function renderTeamRosterDashboard(abbr, data) {
     "Pts/GP","G/GP","A/GP","Shot %","Shots On Net %","Pass %","Faceoff %",
     "Offense Rating","Defense Rating","Teamplay Rating",
     "EV Sh%","EVO","GAR","WAR","Plus Minus","Possession (mins)","TOI (mins)"]);
+  // Player appearances and results do not add up to the team record.
+  if (ROSTER_LAYOUT === "tthl") ["GP", "W", "L", "OT", "OTL"].forEach(col => NON_SUM.add(col));
   const rawSkaterIdx = getIndexMap(skaterLogData.cols);
   const useRawTeamTotals = skaterLogData.cols.length > 0 && rawSkaterIdx["Team"] !== undefined;
   const rawTeamSkaterRows = useRawTeamTotals
